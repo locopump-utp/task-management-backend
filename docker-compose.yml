@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: task-management-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: task_management
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - task-management-network
+
+  # Node.js Backend API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-management-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 4002
+      HOST: 0.0.0.0
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/task_management?authSource=admin
+      DB_NAME: task_management
+      JWT_SECRET: your-super-secret-jwt-key-minimum-32-characters-long-for-production
+      JWT_REFRESH_SECRET: your-super-secret-refresh-jwt-key-minimum-32-characters-long-for-production
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 7d
+      JWT_ISSUER: task-management-api
+      BCRYPT_SALT_ROUNDS: 12
+      CORS_ORIGIN: http://localhost:3000,http://localhost:5173
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX: 100
+      AUTH_RATE_LIMIT_WINDOW_MS: 900000
+      AUTH_RATE_LIMIT_MAX: 5
+      MAX_FILE_SIZE: 5242880
+    ports:
+      - "4002:4002"
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - node_modules:/app/node_modules
+    depends_on:
+      - mongodb
+    networks:
+      - task-management-network
+    command: npm run dev
+
+  # MongoDB Admin Interface (Optional)
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: task-management-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - task-management-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  node_modules:
+    driver: local
+
+networks:
+  task-management-network:
+    driver: bridge
