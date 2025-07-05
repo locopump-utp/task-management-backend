@@ -69,9 +69,13 @@ const taskSchema = new Schema<ITaskDocument>(
       required: [true, 'Due date is required'],
       validate: {
         validator: function(v: Date) {
+          // Allow past dates for completed tasks
+          if (this.status === 'completed') {
+            return true;
+          }
           return v > new Date();
         },
-        message: 'Due date must be in the future',
+        message: 'Due date must be in the future for active tasks',
       },
     },
     completedAt: {
@@ -106,12 +110,7 @@ taskSchema.index({ projectId: 1, status: 1 });
 taskSchema.index({ assignedTo: 1, status: 1 });
 taskSchema.index({ dueDate: 1, status: 1 });
 
-// Virtual for overdue status
-taskSchema.virtual('isOverdue').get(function() {
-  return this.status !== 'completed' && new Date() > this.dueDate;
-});
-
-// Virtual for days until due
+// Virtual for days until due (removed isOverdue virtual to avoid conflict)
 taskSchema.virtual('daysUntilDue').get(function() {
   const today = new Date();
   const due = new Date(this.dueDate);

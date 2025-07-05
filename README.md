@@ -150,222 +150,280 @@ npm run format      # Formatear código con Prettier
 # Desarrollo
 docker-compose up --build     # Construir y levantar servicios
 docker-compose up -d          # Ejecutar en segundo plano
-docker-compose logs -f api    # Ver logs del API
-docker-compose down           # Parar servicios
-docker-compose down -v        # Parar y eliminar volúmenes
+docker-compose down           # Detener y eliminar contenedores
+docker-compose logs app       # Ver logs del backend
+docker-compose logs mongodb   # Ver logs de MongoDB
 
-# Producción
+# Ejecutar comandos dentro del contenedor
+docker-compose exec app npm run migrate   # Ejecutar migraciones
+docker-compose exec app npm run seed      # Ejecutar seeders
+docker-compose exec app npm run dev       # Desarrollo con hot-reload
+
+# Reiniciar servicios
+docker-compose restart app    # Reiniciar solo el backend
+docker-compose restart       # Reiniciar todos los servicios
+```
+
+## 📋 Guía de Inicio Paso a Paso
+
+### 🐳 Opción 1: Con Docker (Recomendado)
+
+1. **Clonar el repositorio:**
+```bash
+git clone https://github.com/locopump-utp/task-management-backend.git
+cd task-management-backend
+```
+
+2. **Verificar que Docker esté funcionando:**
+```bash
+docker --version
+docker-compose --version
+```
+
+3. **Crear archivo de variables de entorno:**
+```bash
+# Crear archivo .env (ya está configurado para Docker)
+cp .env.example .env
+```
+
+4. **Levantar todos los servicios:**
+```bash
+# Construir imágenes y levantar servicios
+docker-compose up --build
+
+# Si quieres ejecutar en segundo plano:
+docker-compose up -d --build
+```
+
+5. **Ejecutar migraciones (en otra terminal):**
+```bash
+# Esperar que los servicios estén corriendo, luego:
+docker-compose exec app npm run migrate
+```
+
+6. **Ejecutar seeders (datos de prueba):**
+```bash
+docker-compose exec app npm run seed
+```
+
+7. **Verificar que todo funciona:**
+- API: http://localhost:4002
+- Mongo Express: http://localhost:8081 (admin/admin123)
+- Health check: http://localhost:4002/api/v1/health
+
+### 💻 Opción 2: Desarrollo Local
+
+1. **Prerrequisitos:**
+```bash
+# Verificar Node.js
+node --version  # Debe ser 22.16.0
+
+# Instalar MongoDB
+# Ubuntu/Debian:
+sudo apt install mongodb
+
+# macOS:
+brew install mongodb-community
+
+# O usar Docker para MongoDB solamente:
+docker run -d -p 27017:27017 --name mongodb mongo:7.0
+```
+
+2. **Configurar el proyecto:**
+```bash
+# Clonar e instalar dependencias
+git clone https://github.com/locopump-utp/task-management-backend.git
+cd task-management-backend
+npm install
+```
+
+3. **Configurar variables de entorno:**
+```bash
+cp .env.example .env
+# Editar .env con tu configuración local
+nano .env
+```
+
+4. **Ejecutar migraciones y seeders:**
+```bash
+npm run migrate
+npm run seed
+```
+
+5. **Iniciar servidor de desarrollo:**
+```bash
+npm run dev
+```
+
+## 🗄️ Base de Datos
+
+### Migraciones
+
+Las migraciones crean las colecciones y configuran índices:
+
+```bash
+# Con Docker
+docker-compose exec app npm run migrate
+
+# Local
+npm run migrate
+```
+
+**Migraciones disponibles:**
+- `001_CreateUsersCollection.ts` - Colección de usuarios
+- `002_CreateProjectsCollection.ts` - Colección de proyectos  
+- `003_CreateTasksCollection.ts` - Colección de tareas
+
+### Seeders
+
+Los seeders insertan datos de prueba:
+
+```bash
+# Con Docker
+docker-compose exec app npm run seed
+
+# Local
+npm run seed
+```
+
+**Datos que se crean:**
+- Usuario administrador: `admin@example.com` / `password123`
+- Usuario normal: `user@example.com` / `password123`
+- 3 proyectos de ejemplo
+- 10 tareas de ejemplo
+
+## 🔍 Verificación del Proyecto
+
+### 1. Healthcheck
+```bash
+curl http://localhost:4002/api/v1/health
+# Respuesta esperada: {"status": "OK", "timestamp": "..."}
+```
+
+### 2. Login de prueba
+```bash
+curl -X POST http://localhost:4002/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@example.com", "password": "password123"}'
+```
+
+### 3. Ver proyectos
+```bash
+# Usar el token del login anterior
+curl http://localhost:4002/api/v1/projects \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+## 🛠️ Solución de Problemas
+
+### Problemas Comunes
+
+**1. Puerto 4002 ocupado:**
+```bash
+# Ver qué proceso usa el puerto
+lsof -i :4002
+
+# Cambiar puerto en docker-compose.yml o .env
+```
+
+**2. MongoDB no conecta:**
+```bash
+# Verificar que MongoDB esté corriendo
+docker-compose logs mongodb
+
+# Reiniciar servicios
+docker-compose restart
+```
+
+**3. Migraciones fallan:**
+```bash
+# Limpiar base de datos y volver a intentar
+docker-compose exec mongodb mongosh
+> use task_management
+> db.dropDatabase()
+> exit
+
+# Volver a ejecutar migraciones
+docker-compose exec app npm run migrate
+```
+
+**4. Permisos en Linux:**
+```bash
+# Si hay problemas de permisos con Docker
+sudo chown -R $USER:$USER .
+```
+
+### Logs útiles
+
+```bash
+# Ver logs del backend
+docker-compose logs -f app
+
+# Ver logs de MongoDB
+docker-compose logs -f mongodb
+
+# Ver logs de todos los servicios
+docker-compose logs -f
+```
+
+## 🚀 Deployment
+
+### Variables de Entorno Producción
+
+```env
+NODE_ENV=production
+PORT=4002
+MONGODB_URI=mongodb://your-production-mongodb-uri
+JWT_SECRET=your-super-secret-jwt-key
+JWT_REFRESH_SECRET=your-super-secret-refresh-key
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+CORS_ORIGIN=https://your-frontend-domain.com
+```
+
+### Build de Producción
+
+```bash
+# Construir imagen de producción
+docker build -t task-management-backend .
+
+# O usar Docker Compose para producción
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📚 API Endpoints
+## 📚 API Documentation
 
-### 🔐 Autenticación
-```
-POST   /api/auth/register     # Registrar usuario
-POST   /api/auth/login        # Iniciar sesión
-POST   /api/auth/logout       # Cerrar sesión
-GET    /api/auth/me           # Obtener perfil actual
-POST   /api/auth/refresh      # Renovar token
-```
+Una vez que el servidor esté corriendo, puedes acceder a:
 
-### 👥 Proyectos
-```
-GET    /api/projects          # Listar proyectos
-POST   /api/projects          # Crear proyecto
-GET    /api/projects/:id      # Obtener proyecto
-PUT    /api/projects/:id      # Actualizar proyecto
-DELETE /api/projects/:id      # Eliminar proyecto
-POST   /api/projects/:id/members    # Agregar miembro
-DELETE /api/projects/:id/members/:userId  # Remover miembro
-```
-
-### ✅ Tareas
-```
-GET    /api/tasks             # Listar tareas
-POST   /api/tasks             # Crear tarea
-GET    /api/tasks/:id         # Obtener tarea
-PUT    /api/tasks/:id         # Actualizar tarea
-DELETE /api/tasks/:id         # Eliminar tarea
-GET    /api/projects/:id/tasks # Tareas de un proyecto
-```
-
-### 👤 Usuarios
-```
-GET    /api/users             # Listar usuarios (admin)
-GET    /api/users/:id         # Obtener usuario
-PUT    /api/users/:id         # Actualizar usuario
-```
-
-### 📊 Dashboard
-```
-GET    /api/dashboard         # Dashboard general
-GET    /api/dashboard/projects # Dashboard de proyectos
-GET    /api/dashboard/tasks   # Dashboard de tareas
-GET    /api/dashboard/admin   # Dashboard admin (solo admin)
-```
-
-## 🔒 Variables de Entorno
-
-```bash
-# Servidor
-NODE_ENV=development
-PORT=4002
-HOST=localhost
-
-# Base de datos
-MONGODB_URI=mongodb://localhost:27017/task_management
-DB_NAME=task_management
-
-# JWT
-JWT_SECRET=your-secret-key-minimum-32-characters
-JWT_REFRESH_SECRET=your-refresh-secret-key-minimum-32-characters
-JWT_ACCESS_EXPIRY=15m
-JWT_REFRESH_EXPIRY=7d
-JWT_ISSUER=task-management-api
-
-# Seguridad
-BCRYPT_SALT_ROUNDS=12
-CORS_ORIGIN=http://localhost:3000
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
-AUTH_RATE_LIMIT_WINDOW_MS=900000
-AUTH_RATE_LIMIT_MAX=5
-
-# Archivos
-MAX_FILE_SIZE=5242880
-```
-
-## 🗄️ Esquema de Base de Datos
-
-### 👤 Users Collection
-```javascript
-{
-  _id: ObjectId,
-  name: string,
-  email: string,           // único
-  password: string,        // hasheado
-  role: 'admin' | 'user',
-  avatar?: string,
-  isActive: boolean,
-  lastLogin?: Date,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-### 📁 Projects Collection
-```javascript
-{
-  _id: ObjectId,
-  name: string,
-  description: string,
-  owner: ObjectId,         // User ID
-  members: ObjectId[],     // Array de User IDs
-  status: 'active' | 'completed' | 'paused',
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-### ✅ Tasks Collection
-```javascript
-{
-  _id: ObjectId,
-  title: string,
-  description: string,
-  projectId: ObjectId,
-  assignedTo: ObjectId,    // User ID
-  status: 'todo' | 'in_progress' | 'completed',
-  priority: 'low' | 'medium' | 'high',
-  dueDate: Date,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-## 🧪 Testing
-
-```bash
-# Ejecutar tests (cuando estén configurados)
-npm test
-
-# Tests con coverage
-npm run test:coverage
-
-# Tests en modo watch
-npm run test:watch
-```
-
-## 🔐 Autenticación y Autorización
-
-### Roles de Usuario
-- **admin**: Acceso completo al sistema
-- **user**: Acceso limitado a sus proyectos y tareas
-
-### Middleware de Autenticación
-- `authenticate`: Requiere token JWT válido
-- `requireAdmin`: Solo administradores
-- `requireUser`: Usuarios autenticados
-- `requireOwnership`: Solo propietario del recurso
-- `requireProjectMember`: Solo miembros del proyecto
-
-## 📈 Características de Producción
-
-- ✅ **Rate Limiting**: Protección contra ataques de fuerza bruta
-- ✅ **CORS**: Configuración de dominios permitidos
-- ✅ **Helmet**: Headers de seguridad
-- ✅ **Compresión**: Respuestas comprimidas con gzip
-- ✅ **Logging**: Sistema de logs con Morgan
-- ✅ **Health Check**: Endpoint de verificación de estado
-- ✅ **Error Handling**: Manejo centralizado de errores
-- ✅ **Validación**: Validación robusta con Zod
-
-## 🚀 Despliegue
-
-### Docker Production
-```bash
-# Construir imagen de producción
-docker build -t task-management-api .
-
-# Ejecutar contenedor
-docker run -d -p 4002:4002 --env-file .env.production task-management-api
-```
-
-### Variables de Entorno de Producción
-```bash
-NODE_ENV=production
-MONGODB_URI=mongodb://your-production-mongodb-uri
-JWT_SECRET=your-super-secure-production-secret
-# ... otras variables
-```
+- **Swagger/OpenAPI**: http://localhost:4002/api/docs
+- **Postman Collection**: `docs/postman_collection.json`
 
 ## 🤝 Contribución
 
 1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+2. Crear una rama feature (`git checkout -b feature/AmazingFeature`)
+3. Commit los cambios (`git commit -m 'Add some AmazingFeature'`)
 4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+5. Abrir un Pull Request
 
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
 
-## 👨‍💻 Autor
-
-**Frank Cáceres** - *locopump* - *AkisoftTech*
-
-## 🆘 Soporte
-
-Si encuentras algún problema o tienes preguntas:
-
-1. Revisa la documentación
-2. Busca en los issues existentes
-3. Crea un nuevo issue si es necesario
-
 ---
 
-⭐ **¡No olvides dar una estrella al proyecto si te ha sido útil!**
+## 🏗️ Comandos de Desarrollo Rápido
+
+```bash
+# Inicio completo con Docker
+git clone https://github.com/locopump-utp/task-management-backend.git
+cd task-management-backend
+docker-compose up -d --build
+docker-compose exec app npm run migrate
+docker-compose exec app npm run seed
+
+# Verificar
+curl http://localhost:4002/api/v1/health
+```
+
+**¡Tu API estará corriendo en http://localhost:4002! 🎉**

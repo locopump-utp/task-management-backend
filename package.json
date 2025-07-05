@@ -6,13 +6,13 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "dev:watch": "nodemon --exec ts-node src/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/server.ts",
+    "dev:watch": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "migrate": "ts-node src/database/migrations/migrate.ts",
-    "seed": "ts-node src/database/seeders/seed.ts"
+    "migrate": "ts-node -r tsconfig-paths/register src/database/migrations/migrate.ts",
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeders/seed.ts"
   },
   "keywords": [
     "nodejs",
@@ -53,6 +53,8 @@
     "prettier": "^3.1.1",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3"
   },
   "engines": {
