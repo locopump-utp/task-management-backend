@@ -16,10 +16,9 @@ router.use('/projects', projectRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/dashboard', dashboardRoutes);
 
-// Add route for project tasks (nested route)
+// Modify the nested route logic for project tasks
 router.use('/projects/:projectId/tasks', (req, res, next) => {
-  // Forward to task controller with projectId
-  req.params.projectId = req.params.projectId;
+  req.params.projectId = req.params.projectId; // Ensure projectId is passed correctly
   next();
 }, taskRoutes);
 

@@ -427,3 +427,44 @@ curl http://localhost:4002/api/v1/health
 ```
 
 **¡Tu API estará corriendo en http://localhost:4002! 🎉**
+
+## API Endpoints
+
+### Authentication
+- `POST /api/v1/auth/register` - Register a new user
+- `POST /api/v1/auth/login` - Login and receive access token
+- `POST /api/v1/auth/logout` - Logout and invalidate token
+- `GET /api/v1/auth/me` - Get current user details
+
+### Users
+- `GET /api/v1/users` - Get all users (Admin only)
+- `GET /api/v1/users/statistics` - Get user statistics (Admin only)
+- `GET /api/v1/users/search` - Search users (Authenticated users)
+- `GET /api/v1/users/:id` - Get user by ID (Ownership required)
+
+### Projects
+- `GET /api/v1/projects` - Get all projects
+- `POST /api/v1/projects` - Create a new project
+- `GET /api/v1/projects/:id` - Get project by ID
+- `PUT /api/v1/projects/:id` - Update project by ID
+- `DELETE /api/v1/projects/:id` - Delete project by ID
+
+### Tasks
+- `POST /api/v1/tasks` - Create a new task
+- `GET /api/v1/tasks/search` - Search tasks
+- `GET /api/v1/tasks/my-tasks` - Get tasks assigned to the current user
+- `GET /api/v1/tasks/dashboard` - Get task dashboard
+- `GET /api/v1/tasks/overdue` - Get overdue tasks
+- `GET /api/v1/tasks/due-soon` - Get tasks due soon
+- `GET /api/v1/tasks/statistics` - Get task statistics
+- `PATCH /api/v1/tasks/bulk-update` - Bulk update tasks
+- `GET /api/v1/tasks/:id` - Get task by ID
+- `PUT /api/v1/tasks/:id` - Update task by ID
+- `DELETE /api/v1/tasks/:id` - Delete task by ID
+
+### Dashboard
+- `GET /api/v1/dashboard/projects` - Get project dashboard
+- `GET /api/v1/dashboard/tasks` - Get task dashboard
+
+### Health Check
+- `GET /api/v1/health` - Check API health
